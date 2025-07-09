@@ -14,11 +14,12 @@ class Customer extends Model
         'nama',
         'alamat',
         'identitas',
+        'nomor_identitas',
         'upload_identitas',
     ];
 
     protected $casts = [
-        'upload_identitas' => 'string', // Cast blob ke string untuk kemudahan manipulasi
+        'upload_identitas' => 'string', 
     ];
 
     public function user()
