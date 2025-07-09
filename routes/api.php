@@ -22,6 +22,7 @@ Route::middleware('jwt.auth')->group(function () {
 
     Route::prefix('customer')->middleware('check_customer_ownership')->group(function () {
         Route::post('upload-identitas', [CustomerController::class, 'uploadIdentitas']);
+        Route::get('profile', [CustomerController::class, 'getMyProfile']);
 
         // Rute untuk Pemesanan Customer
         Route::post('orders', [OrderController::class, 'store']);

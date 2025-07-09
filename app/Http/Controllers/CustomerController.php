@@ -105,6 +105,26 @@ class CustomerController extends Controller
         ]);
     }
 
+    public function getMyProfile()
+    {
+        $user = Auth::user();
+
+        if ($user->role->nama !== 'customer') {
+            return response()->json(['message' => 'Hanya customer yang dapat melihat profil sendiri.'], 403);
+        }
+
+        $customer = $user->customer;
+
+        if (!$customer) {
+            return response()->json(['message' => 'Profil belum lengkap.', 'data' => null], 404);
+        }
+        return response()->json([
+            'message' => 'Profil berhasil ditemukan.',
+            'status_code' => 200,
+            'data' => $customer,
+        ], 200);
+    }
+
     public function index()
     {
         $customers = Customer::with('user.role')->get();
