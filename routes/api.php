@@ -45,6 +45,7 @@ Route::middleware('jwt.auth')->group(function () {
         Route::delete('maps/{id}', [MapController::class, 'destroy']);
 
         Route::put('customers/{userId}/status', [CustomerController::class, 'updateStatusAkun']);
+        Route::get('customers/{id}', [CustomerController::class, 'show']);
         Route::get('customers', [CustomerController::class, 'index']);
 
         Route::get('orders', [OrderController::class, 'index']);

@@ -84,26 +84,52 @@ class CustomerController extends Controller
         }
     }
 
-    public function updateStatusAkun(Request $request, string $userId)
+    public function updateStatusAkun(Request $request, $userId)
     {
-        $user = User::find($userId);
-
-        if (!$user || $user->role->nama !== 'customer') {
-            return response()->json(['message' => 'User atau customer tidak ditemukan.'], 404);
-        }
-
         $request->validate([
             'status_akun' => 'required|in:Terverifikasi,Belum Terverifikasi',
         ]);
+
+        $user = User::find($userId);
+        if (!$user || !$user->customer) {
+            return response()->json(['message' => 'Customer tidak ditemukan'], 404);
+        }
 
         $user->status_akun = $request->status_akun;
         $user->save();
 
         return response()->json([
-            'message' => 'Status akun berhasil diperbarui!',
-            'user' => $user->load('role'),
+            'message' => 'Status akun berhasil diperbarui',
+            'status_code' => 200,
         ]);
     }
+
+
+    public function show($id)
+    {
+        $customer = Customer::with('user.role')->find($id);
+
+        if (!$customer) {
+            return response()->json(['message' => 'Customer tidak ditemukan'], 404);
+        }
+
+        return response()->json([
+            'message' => 'Detail customer berhasil ditemukan',
+            'data' => [
+                'id' => $customer->id,
+                'nama' => $customer->nama,
+                'alamat' => $customer->alamat,
+                'identitas' => $customer->identitas,
+                'nomor_identitas' => $customer->nomor_identitas,
+                'upload_identitas' => $customer->upload_identitas,
+                'user' => [
+                    'id' => $customer->user->id,
+                    'email' => $customer->user->email,
+                ],
+            ],
+        ]);
+    }
+
 
     public function getMyProfile()
     {
@@ -113,15 +139,33 @@ class CustomerController extends Controller
             return response()->json(['message' => 'Hanya customer yang dapat melihat profil sendiri.'], 403);
         }
 
-        $customer = $user->customer;
+        $customer = $user->customer()->with('user.role')->first();
 
         if (!$customer) {
             return response()->json(['message' => 'Profil belum lengkap.', 'data' => null], 404);
         }
+
         return response()->json([
             'message' => 'Profil berhasil ditemukan.',
             'status_code' => 200,
-            'data' => $customer,
+            'data' => [
+                'id' => $customer->id,
+                'user_id' => $customer->user_id,
+                'nama' => $customer->nama,
+                'alamat' => $customer->alamat,
+                'identitas' => $customer->identitas,
+                'nomor_identitas' => $customer->nomor_identitas,
+                'upload_identitas' => $customer->upload_identitas,
+                'user' => [
+                    'id' => $customer->user->id,
+                    'email' => $customer->user->email,
+                    'status_akun' => $customer->user->status_akun,
+                    'role' => [
+                        'id' => $customer->user->role->id,
+                        'nama' => $customer->user->role->nama,
+                    ]
+                ],
+            ],
         ], 200);
     }
 
