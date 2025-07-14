@@ -31,6 +31,7 @@ class CarOrderRequest extends FormRequest
                 'tanggal_selesai' => ['nullable', 'date', 'after_or_equal:tanggal_mulai'],
                 'metode_pembayaran' => ['nullable', 'string', 'max:255'],
                 'status_pemesanan' => ['nullable', 'string', Rule::in(['Dibatalkan'])],
+                'rating' => 'nullable|integer|min:1|max:5',
             ];
         }
 

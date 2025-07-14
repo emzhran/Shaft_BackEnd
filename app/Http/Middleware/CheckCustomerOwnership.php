@@ -17,7 +17,7 @@ class CheckCustomerOwnership
         $user = auth()->user();
         
        if (!$user || $user->role_id !== 2) {
-        return response()->json(['message' => 'Unauthorized'], 403);
+        return response()->json(['message' => 'Anda tidak memiliki izin untuk melakukan tindakan ini.'], 403);
         }
 
 

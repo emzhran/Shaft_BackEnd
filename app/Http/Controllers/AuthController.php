@@ -119,6 +119,7 @@ class AuthController extends Controller
                 'nama' => $user->nama,
                 'email' => $user->email,
                 'role' => $user->role->nama,
+                'status_akun' => $user->status_akun,
                 'token' => $token,
             ];
 

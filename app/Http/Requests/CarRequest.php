@@ -16,6 +16,7 @@ class CarRequest extends FormRequest
         return [
             'merk_mobil' => 'required|string|max:255',
             'nama_mobil' => 'required|string|max:255',
+            'nomor_kendaraan' => 'required|string|max:255',
             'harga_mobil' => 'required|numeric|min:0',
             'jumlah_mobil' => 'required|integer|min:0',
             'jumlah_kursi' => 'required|integer|min:1',

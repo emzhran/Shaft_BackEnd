@@ -81,6 +81,7 @@ class CarController extends Controller
         $car = Car::create([
             'merk_mobil' => $validatedData['merk_mobil'],
             'nama_mobil' => $validatedData['nama_mobil'],
+            'nomor_kendaraan' => $validatedData['nomor_kendaraan'],
             'harga_mobil' => $validatedData['harga_mobil'],
             'jumlah_mobil' => $validatedData['jumlah_mobil'],
             'jumlah_kursi' => $validatedData['jumlah_kursi'],
@@ -101,6 +102,7 @@ class CarController extends Controller
 
     $car->merk_mobil = $request->input('merk_mobil');
     $car->nama_mobil = $request->input('nama_mobil');
+    $car->nomor_kendaraan = $request->input('nomor_kendaraan');
     $car->transmisi = $request->input('transmisi');
     $car->jumlah_kursi = $request->input('jumlah_kursi');
     $car->jumlah_mobil = $request->input('jumlah_mobil');

@@ -80,10 +80,8 @@ class OrderController extends Controller
             'tanggal_selesai' => $request->tanggal_selesai,
             'metode_pembayaran' => $request->metode_pembayaran,
             'status_pemesanan' => 'Pending',
+            'rating' => null
         ]);
-
-        $car->jumlah_mobil--;
-        $car->save();
 
         return response()->json([
             'message' => 'Pesanan berhasil dibuat!',
@@ -114,32 +112,37 @@ class OrderController extends Controller
      */
     public function index()
     {
-        // Middleware 'is_admin' sudah menangani otorisasi
-        $orders = Order::with('user', 'car')->get();
-        return response()->json(['data' => $orders]);
+        $orders = Order::with(['user.customer', 'car'])->get();
+
+        $result = $orders->map(function ($order) {
+            $user = $order->user;
+            $customer = $user->customer;
+
+            return [
+                'id' => $order->id,
+                'user_id' => $order->user_id,
+                'car_id' => $order->car_id,
+                'tanggal_mulai' => $order->tanggal_mulai,
+                'tanggal_selesai' => $order->tanggal_selesai,
+                'metode_pembayaran' => $order->metode_pembayaran,
+                'status_pemesanan' => $order->status_pemesanan,
+                'rating' => $order->rating,
+                'user' => [
+                    'id' => $user->id,
+                    'nama' => $user->nama,
+                    'email' => $user->email,
+                    'status_akun' => $user->status_akun,
+                    'alamat' => optional($customer)->alamat,
+                    'identitas' => optional($customer)->identitas,
+                    'nomor_identitas' => optional($customer)->nomor_identitas,
+                ],
+                'car' => $order->car,
+            ];
+        });
+
+        return response()->json(['data' => $result]);
     }
 
-    /**
-     *
-     * @authenticated
-     *
-     * @response {
-     * "data": [
-     * {
-     * "id": 1,
-     * "user_id": 2,
-     * "car": { "id": 1, "nama_mobil": "Avanza" },
-     * "tanggal_pemesanan": "2025-07-01",
-     * "metode_pembayaran": "Transfer Bank",
-     * "status_pemesanan": "Pending"
-     * }
-     * ]
-     * }
-     *
-     * @response 403 {
-     * "message": "Hanya customer yang dapat melihat riwayat pesanan mereka."
-     * }
-     */
     public function myOrders()
     {
         $user = Auth::user();
@@ -236,8 +239,8 @@ class OrderController extends Controller
         }
 
         $order = Order::where('id', $id)
-                      ->where('user_id', $user->id)
-                      ->first();
+                    ->where('user_id', $user->id)
+                    ->first();
 
         if (!$order) {
             return response()->json(['message' => 'Pesanan tidak ditemukan atau Anda tidak memiliki izin untuk memperbaruinya.'], 404);
@@ -252,6 +255,17 @@ class OrderController extends Controller
             }
             if ($request->has('metode_pembayaran')) {
                 $order->metode_pembayaran = $request->metode_pembayaran;
+            }
+        }
+
+        if ($request->has('rating')) {
+            if ($order->status_pemesanan === 'Selesai') {
+                $validated = $request->validate([
+                    'rating' => 'integer|min:1|max:5'
+                ]);
+                $order->rating = $request->rating;
+            } else {
+                return response()->json(['message' => 'Rating hanya dapat diberikan jika status pesanan adalah Selesai.'], 400);
             }
         }
 
@@ -322,24 +336,29 @@ class OrderController extends Controller
             'status_pemesanan' => 'required|in:Pending,Dikonfirmasi,Dibatalkan,Selesai',
         ]);
 
-        if ($order->status_pemesanan !== 'Dibatalkan' && $request->status_pemesanan === 'Dibatalkan') {
-            $car = Car::find($order->car_id);
-            if ($car) {
-                $car->jumlah_mobil++;
-                $car->save();
-            }
-        } elseif ($order->status_pemesanan === 'Dibatalkan' && $request->status_pemesanan !== 'Dibatalkan') {
-            $car = Car::find($order->car_id);
-            if ($car && $car->jumlah_mobil > 0) {
-                $car->jumlah_mobil--;
+        $oldStatus = $order->status_pemesanan;
+        $newStatus = $request->status_pemesanan;
+        $car = Car::find($order->car_id);
+
+        if (!$car) {
+            return response()->json(['message' => 'Mobil tidak ditemukan.'], 404);
+        }
+
+        if ($oldStatus !== 'Dikonfirmasi' && $newStatus === 'Dikonfirmasi') {
+            if ($car->jumlah_mobil > 0) {
+                $car->jumlah_mobil -= 1;
                 $car->save();
             } else {
-                return response()->json(['message' => 'Tidak dapat mengubah status dari "Dibatalkan" karena stok mobil habis.'], 400);
+                return response()->json(['message' => 'Stok mobil habis. Tidak bisa konfirmasi pesanan.'], 400);
             }
         }
 
+        if ($oldStatus === 'Dikonfirmasi' && in_array($newStatus, ['Dibatalkan', 'Selesai'])) {
+            $car->jumlah_mobil += 1;
+            $car->save();
+        }
 
-        $order->status_pemesanan = $request->status_pemesanan;
+        $order->status_pemesanan = $newStatus;
         $order->save();
 
         return response()->json([
@@ -347,4 +366,5 @@ class OrderController extends Controller
             'order' => $order,
         ]);
     }
+
 }
